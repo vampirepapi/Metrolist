@@ -25,6 +25,7 @@ import com.metrolist.music.db.entities.FormatEntity
 import com.metrolist.music.db.entities.SongEntity
 import com.metrolist.music.di.DownloadCache
 import com.metrolist.music.di.PlayerCache
+import com.metrolist.music.utils.MusicFileExporter
 import com.metrolist.music.utils.YTPlayerUtils
 import com.metrolist.music.utils.enumPreference
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -56,6 +57,7 @@ constructor(
     @DownloadCache val downloadCache: SimpleCache,
     @PlayerCache val playerCache: SimpleCache,
 ) {
+    private val appContext = context
     private val connectivityManager = context.getSystemService<ConnectivityManager>()!!
     private val audioQuality by enumPreference(context, AudioQualityKey, AudioQuality.AUTO)
     private val songUrlCache = HashMap<String, Pair<String, Long>>()
@@ -181,6 +183,23 @@ constructor(
                             when (download.state) {
                                 Download.STATE_COMPLETED -> {
                                     database.updateDownloadedInfo(download.request.id, true, LocalDateTime.now())
+                                    val songId = download.request.id
+                                    val song = database.getSongById(songId)
+                                    if (song != null) {
+                                        val title = song.song.title
+                                        val artist = song.artists
+                                            .joinToString(", ") { it.name }
+                                            .ifEmpty { "Unknown Artist" }
+                                        val mimeType = song.format?.mimeType ?: "audio/mp4"
+                                        MusicFileExporter.exportToMusicFolder(
+                                            context = appContext,
+                                            songId = songId,
+                                            title = title,
+                                            artist = artist,
+                                            mimeType = mimeType,
+                                            cache = downloadCache,
+                                        )
+                                    }
                                 }
                                 Download.STATE_FAILED,
                                 Download.STATE_STOPPED,
