@@ -25,6 +25,7 @@ import com.metrolist.music.db.entities.FormatEntity
 import com.metrolist.music.db.entities.SongEntity
 import com.metrolist.music.di.DownloadCache
 import com.metrolist.music.di.PlayerCache
+import androidx.media3.common.util.UnstableApi
 import com.metrolist.music.utils.MusicFileExporter
 import com.metrolist.music.utils.YTPlayerUtils
 import com.metrolist.music.utils.enumPreference
@@ -47,6 +48,7 @@ import java.util.concurrent.Executor
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@UnstableApi
 @Singleton
 class DownloadUtil
 @Inject

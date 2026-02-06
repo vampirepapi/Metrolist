@@ -6,11 +6,16 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.SimpleCache
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSpec
+import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
 
+@UnstableApi
 object MusicFileExporter {
     private const val TAG = "MusicFileExporter"
     private const val SUBFOLDER = "Metrolist"
@@ -28,21 +33,23 @@ object MusicFileExporter {
             val sanitizedName = sanitizeFilename("$artist - $title")
             val filename = "$sanitizedName$extension"
 
-            val spans = cache.getCachedSpans(songId)
-            if (spans.isEmpty()) {
-                Log.w(TAG, "No cached spans found for $songId")
+            Log.d(TAG, "Exporting songId=$songId, filename=$filename, mimeType=$mimeType")
+
+            val contentLength = cache.getCachedLength(songId, 0, Long.MAX_VALUE)
+            Log.d(TAG, "Cached content length for $songId: $contentLength bytes")
+
+            if (contentLength <= 0) {
+                Log.w(TAG, "No cached data found for $songId")
                 return
             }
 
-            val sortedSpans = spans.sortedBy { it.position }
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                exportViaMediaStore(context, filename, mimeType, sortedSpans)
+                exportViaMediaStore(context, songId, filename, mimeType, cache)
             } else {
-                exportViaDirectFile(filename, sortedSpans)
+                exportViaDirectFile(songId, filename, cache)
             }
 
-            Log.i(TAG, "Exported '$filename' to Music/$SUBFOLDER/")
+            Log.i(TAG, "Successfully exported '$filename' to Music/$SUBFOLDER/")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to export song $songId", e)
         }
@@ -50,9 +57,10 @@ object MusicFileExporter {
 
     private fun exportViaMediaStore(
         context: Context,
+        songId: String,
         filename: String,
         mimeType: String,
-        spans: List<androidx.media3.datasource.cache.CacheSpan>,
+        cache: SimpleCache,
     ) {
         val resolver = context.contentResolver
 
@@ -91,7 +99,7 @@ object MusicFileExporter {
 
         try {
             resolver.openOutputStream(uri)?.use { outputStream ->
-                writeSpansToStream(spans, outputStream)
+                readCacheToStream(cache, songId, outputStream)
             } ?: throw Exception("Failed to open output stream for $uri")
 
             val updateValues = ContentValues().apply {
@@ -106,8 +114,9 @@ object MusicFileExporter {
 
     @Suppress("DEPRECATION")
     private fun exportViaDirectFile(
+        songId: String,
         filename: String,
-        spans: List<androidx.media3.datasource.cache.CacheSpan>,
+        cache: SimpleCache,
     ) {
         val musicDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
@@ -117,18 +126,34 @@ object MusicFileExporter {
 
         val file = File(musicDir, filename)
         FileOutputStream(file).use { outputStream ->
-            writeSpansToStream(spans, outputStream)
+            readCacheToStream(cache, songId, outputStream)
         }
     }
 
-    private fun writeSpansToStream(
-        spans: List<androidx.media3.datasource.cache.CacheSpan>,
+    private fun readCacheToStream(
+        cache: SimpleCache,
+        songId: String,
         outputStream: OutputStream,
     ) {
-        for (span in spans) {
-            span.file?.inputStream()?.use { input ->
-                input.copyTo(outputStream)
+        val dataSource = CacheDataSource(cache, null)
+        try {
+            val dataSpec = DataSpec.Builder()
+                .setUri(songId.toUri())
+                .setKey(songId)
+                .build()
+            val totalBytes = dataSource.open(dataSpec)
+            Log.d(TAG, "Reading $totalBytes bytes from cache for $songId")
+
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            var totalRead = 0L
+            while (dataSource.read(buffer, 0, buffer.size).also { bytesRead = it } != -1) {
+                outputStream.write(buffer, 0, bytesRead)
+                totalRead += bytesRead
             }
+            Log.d(TAG, "Wrote $totalRead bytes to output")
+        } finally {
+            dataSource.close()
         }
     }
 
