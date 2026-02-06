@@ -50,7 +50,7 @@ object MusicFileExporter {
                 Log.d(TAG, "Exporting songId=$songId, filename=$filename, mimeType=$mediaStoreMimeType")
                 exportViaMediaStore(context, songId, filename, mediaStoreMimeType, cache)
             } else {
-                val extension = mimeTypeToExtension(mimeType)
+                val extension = ".m4a"
                 filename = "$sanitizedName$extension"
                 Log.d(TAG, "Exporting songId=$songId, filename=$filename, mimeType=$mimeType")
                 exportViaDirectFile(songId, filename, cache)
@@ -177,11 +177,7 @@ object MusicFileExporter {
             else -> ".m4a"
         }
 
-    private fun toMediaStoreMimeType(mimeType: String): String =
-        when (mimeType) {
-            "audio/webm" -> "audio/ogg"
-            else -> mimeType
-        }
+    private fun toMediaStoreMimeType(@Suppress("UNUSED_PARAMETER") mimeType: String): String = "audio/mp4"
 
     private fun showToast(context: Context, message: String) {
         Handler(Looper.getMainLooper()).post {
