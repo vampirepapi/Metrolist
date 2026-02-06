@@ -59,24 +59,8 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
-      - name: Sign APK
-        uses: ilharp/sign-android-release@v2.0.0
-        with:
-          releaseDir: app/build/outputs/apk/universalFoss/release/
-          signingKey: ${{ secrets.KEYSTORE }}
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: 35.0.0
-
-      - name: Move signed APK
-        run: |
-          OUTPUT_DIR="app/build/outputs/apk/universalFoss/release"
-          mkdir -p "$OUTPUT_DIR/out"
-          find "$OUTPUT_DIR" -name "*-signed.apk" -o -name "*-unsigned-signed.apk" | xargs -I{} mv {} "$OUTPUT_DIR/out/app-universal-test-release.apk"
-
-      - name: Upload Signed APK
+      - name: Upload APK
         uses: actions/upload-artifact@v6
         with:
           name: app-universal-test-release
-          path: app/build/outputs/apk/universalFoss/release/out/*
+          path: app/build/outputs/apk/universalFoss/release/*.apk
