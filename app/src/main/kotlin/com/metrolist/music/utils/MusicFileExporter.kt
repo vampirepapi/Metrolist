@@ -47,7 +47,8 @@ object MusicFileExporter {
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                exportViaMediaStore(context, songId, filename, mimeType, cache)
+                val mediaStoreMimeType = toMediaStoreMimeType(mimeType)
+                exportViaMediaStore(context, songId, filename, mediaStoreMimeType, cache)
             } else {
                 exportViaDirectFile(songId, filename, cache)
             }
@@ -171,6 +172,12 @@ object MusicFileExporter {
             "audio/opus" -> ".opus"
             "audio/flac" -> ".flac"
             else -> ".m4a"
+        }
+
+    private fun toMediaStoreMimeType(mimeType: String): String =
+        when (mimeType) {
+            "audio/webm" -> "audio/ogg"
+            else -> mimeType
         }
 
     private fun showToast(context: Context, message: String) {
