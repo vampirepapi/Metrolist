@@ -46,6 +46,15 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Generate debug keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore app/persistent-debug.keystore \
+            -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+
       - name: Build Universal Debug APK (No Lint)
         run: ./gradlew --console=plain assembleUniversalFossDebug --warning-mode summary -x lint -x lintUniversalFossDebug
         env:
