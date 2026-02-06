@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   build_quick:
-    name: Quick Universal Release Build
+    name: Quick Universal Debug Build
     runs-on: ubuntu-latest
 
     steps:
@@ -46,13 +46,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Change Package Name for Test Build
-        run: |
-          # Change applicationId to test variant
-          sed -i 's/applicationId = "com.metrolist.music"/applicationId = "com.metrolist.music.test"/' app/build.gradle.kts
-
-      - name: Build Universal Release APK (No Lint)
-        run: ./gradlew --console=plain assembleUniversalFossRelease --warning-mode summary -x lint -x lintUniversalFossRelease
+      - name: Build Universal Debug APK (No Lint)
+        run: ./gradlew --console=plain assembleUniversalFossDebug --warning-mode summary -x lint -x lintUniversalFossDebug
         env:
           PULL_REQUEST: "false"
           GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -62,5 +57,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v6
         with:
-          name: app-universal-test-release
-          path: app/build/outputs/apk/universalFoss/release/*.apk
+          name: app-universal-debug
+          path: app/build/outputs/apk/universalFoss/debug/*.apk
