@@ -5,7 +5,10 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.common.util.UnstableApi
@@ -50,8 +53,10 @@ object MusicFileExporter {
             }
 
             Log.i(TAG, "Successfully exported '$filename' to Music/$SUBFOLDER/")
+            showToast(context, "Saved to Music/$SUBFOLDER/$filename")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to export song $songId", e)
+            showToast(context, "Export failed: ${e.message}")
         }
     }
 
@@ -167,6 +172,12 @@ object MusicFileExporter {
             "audio/flac" -> ".flac"
             else -> ".m4a"
         }
+
+    private fun showToast(context: Context, message: String) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
 
     private fun sanitizeFilename(name: String): String {
         return name.replace(Regex("[\\\\/:*?\"<>|]"), "_")
