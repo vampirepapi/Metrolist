@@ -32,11 +32,7 @@ object MusicFileExporter {
         cache: SimpleCache,
     ) {
         try {
-            val extension = mimeTypeToExtension(mimeType)
             val sanitizedName = sanitizeFilename("$artist - $title")
-            val filename = "$sanitizedName$extension"
-
-            Log.d(TAG, "Exporting songId=$songId, filename=$filename, mimeType=$mimeType")
 
             val contentLength = cache.getCachedLength(songId, 0, Long.MAX_VALUE)
             Log.d(TAG, "Cached content length for $songId: $contentLength bytes")
@@ -46,10 +42,17 @@ object MusicFileExporter {
                 return
             }
 
+            val filename: String
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val mediaStoreMimeType = toMediaStoreMimeType(mimeType)
+                val extension = mimeTypeToExtension(mediaStoreMimeType)
+                filename = "$sanitizedName$extension"
+                Log.d(TAG, "Exporting songId=$songId, filename=$filename, mimeType=$mediaStoreMimeType")
                 exportViaMediaStore(context, songId, filename, mediaStoreMimeType, cache)
             } else {
+                val extension = mimeTypeToExtension(mimeType)
+                filename = "$sanitizedName$extension"
+                Log.d(TAG, "Exporting songId=$songId, filename=$filename, mimeType=$mimeType")
                 exportViaDirectFile(songId, filename, cache)
             }
 
